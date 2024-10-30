@@ -11,7 +11,6 @@ services:
         reservations:
           cpus: '0.05'
           memory: 6M
-          pids: 1
         limits:
           cpus: '0.50'
           memory: 6M
@@ -28,3 +27,18 @@ services:
       - blog
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
+  
+  controller:
+    image: ngrinder/controller
+    restart: always
+    ports:
+      - "9000:80"
+      - "16001:16001"
+      - "12000-12009:12000-12009"
+    volumes:
+      - ./ngrinder-controller:/opt/ngrinder-controller
+  agent:
+    image: ngrinder/agent
+    restart: always
+    links:
+      - controller

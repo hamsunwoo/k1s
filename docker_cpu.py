@@ -1,31 +1,52 @@
 import subprocess
 import json
 import os
-
-# 컨테이너의 CPU 할당량 설정
-cnt = 2
-
-# Docker stats 명령어 실행
-r = subprocess.check_output(['docker', 'stats', 'ham-blog-1', '--no-stream', '--format', '{{ json . }}'])
-
-# JSON 문자열을 딕셔너리로 변환
-stats = json.loads(r.decode("utf-8"))
-
-# CPU 사용량을 숫자로 변환하고 조건 평가
-cpu_usage = float(stats["CPUPerc"].strip('%'))  # '%'를 제거하고 float로 변환
-
-while True:
-    if cpu_usage <= 0.01:
-    #docker compose up -d --scale blog=1
-        subprocess.run(['docker', 'compose', 'up', '-d','--scale', f'blog={cnt}'], capture_output=True, text=True)
-        print(f"CPU {cnt} 만큼 할당되었습니다.")
-    else:
-        print("CPU 사용량이 0.01% 미만입니다.")
+import time
 
 
-#if r.returncode == 0:
-#    print(f"{container_name}의 CPU 할당량이 {cpu_scale}로 업데이트되었습니다.")
-#else:
-#    print(f"오류 발생: {r.stderr.strip()}")
+#Docker CPU 가져오기
+def get_cpu(num):
+    tmp = []
+    for num in range(1, num+1):
+        r = subprocess.check_output(['docker', 'stats', f'ham-blog-{num}', '--no-stream', '--format', '{{ json . }}'])
+        stats = json.loads(r.decode("utf-8"))
+        cpu_usage = float(stats["CPUPerc"].strip('%')) 
+        tmp.append(cpu_usage)
 
-os.system("sleep 10")
+      
+    return tmp
+
+def set_scale(num=1):
+    cpu = get_cpu(num)
+
+    while True:
+        if len(cpu) >= 1 and len(cpu) <=5:
+            if cpu[0] >= 0.01:
+                num += 1
+                subprocess.run(['docker', 'compose', 'up', '-d','--scale', f'blog={num}'])
+                print(f"scale={num} 입니다.")
+                time.sleep(10)
+                set_scale(num)
+
+            else:
+                num -= 1
+                subprocess.run(['docker', 'compose', 'up', '-d','--scale', f'blog={num}'])
+                time.sleep(10)
+                set_scale(num)
+        
+        elif len(cpu) > 5:
+            if num > 1:
+                num -= 1
+                subprocess.run(['docker', 'compose', 'up', '-d','--scale', f'blog={num}'])
+                time.sleep(10)
+                set_scale(num)
+
+            else:
+                print("더이상 내릴 수 없습니다.")
+                time.sleep(10)
+        
+        else:
+            print("CPU 정보가 없습니다.")
+            time.sleep(10)
+
+set_scale()
