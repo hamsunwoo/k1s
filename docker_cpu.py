@@ -4,6 +4,19 @@ import os
 import time
 
 
+# 라인 알림 전송
+def send_line_noti(message):
+    url = "https://notify-api.line.me/api/notify"
+    token = os.getenv('LINE_NOTI_TOKEN', 'NULL')
+    headers = {'Authorization': 'Bearer ' + token}
+
+    data = {
+        "message": message
+    }
+
+    resp = requests.post(url, headers=headers, data=data)
+
+
 #Docker CPU 가져오기
 def get_cpu(num):
     tmp = []
@@ -27,12 +40,14 @@ def set_scale(num=1):
                 print(f"scale={num} 입니다.")
                 time.sleep(10)
                 set_scale(num)
+                send_line_noti("스케일 아웃이 진행되었습니다.")
 
             else:
                 num -= 1
                 subprocess.run(['docker', 'compose', 'up', '-d','--scale', f'blog={num}'])
                 time.sleep(10)
                 set_scale(num)
+                send_line_noti("스케일 인이 진행되었습니다.")
         
         elif len(cpu) > 5:
             if num > 1:
@@ -40,6 +55,7 @@ def set_scale(num=1):
                 subprocess.run(['docker', 'compose', 'up', '-d','--scale', f'blog={num}'])
                 time.sleep(10)
                 set_scale(num)
+                send_line_noti("스케일 인이 진행되었습니다.")
 
             else:
                 print("더이상 내릴 수 없습니다.")
